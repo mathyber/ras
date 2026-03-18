@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAS Overlay</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      /* Must be transparent to let the BrowserWindow transparency work */
+      background: transparent;
+      width: 320px;
+      height: 130px;
+      overflow: hidden;
+      user-select: none;
+      /* Disable text selection — this is a passive display widget */
+      -webkit-user-select: none;
+    }
+
+    #root {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* The "Mark Learned" button fades in on hover.
+       We use a CSS class toggle for performance (avoids React re-render on every mouse move). */
+    .overlay-card .btn-learned {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .overlay-card.hovered .btn-learned {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Micro animation for when a new word appears */
+    @keyframes wordSlideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .word-content {
+      animation: wordSlideIn 0.25s ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="./main.jsx"></script>
+</body>
+</html>

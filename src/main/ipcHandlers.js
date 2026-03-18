@@ -30,7 +30,7 @@ function registerIpcHandlers({ getMainWindow }) {
   })
 
   ipcMain.handle('words:add', (_event, { word, translation, example }) => {
-    if (!word || !translation) {
+    if (!word?.trim() || !translation?.trim()) {
       throw new Error('word and translation are required')
     }
 
@@ -39,6 +39,11 @@ function registerIpcHandlers({ getMainWindow }) {
     data.words.push(newWord)
     setData(data)
 
+    // WARN-004: if overlay was hidden (no current word), show the new word immediately
+    if (!scheduler.getCurrentWord()) {
+      scheduler.showNext()
+    }
+
     mainWindowRef = getMainWindow()
     notifyMainWindow()
 
@@ -46,7 +51,7 @@ function registerIpcHandlers({ getMainWindow }) {
   })
 
   ipcMain.handle('words:update', (_event, { id, word, translation, example }) => {
-    if (!id || !word || !translation) {
+    if (!id || !word?.trim() || !translation?.trim()) {
       throw new Error('id, word and translation are required')
     }
 
@@ -63,6 +68,9 @@ function registerIpcHandlers({ getMainWindow }) {
     }
 
     setData(data)
+
+    // WARN-003: if the edited word is currently shown in overlay, refresh it
+    scheduler.refreshCurrentWord()
 
     mainWindowRef = getMainWindow()
     notifyMainWindow()
@@ -129,21 +137,31 @@ function registerIpcHandlers({ getMainWindow }) {
     let skipped = 0
 
     for (const item of incoming) {
-      if (!item.word || !item.translation) {
+      // BUG-003: require string types to avoid .trim() crash on non-strings
+      if (typeof item.word !== 'string' || typeof item.translation !== 'string') {
         skipped++
         continue
       }
-      const newWord = createWord(item.word, item.translation, item.example || '')
+      if (!item.word.trim() || !item.translation.trim()) {
+        skipped++
+        continue
+      }
+      const newWord = createWord(item.word, item.translation, typeof item.example === 'string' ? item.example : '')
       // Preserve learned state if present in the import
       if (item.learned === true) {
         newWord.learned = true
-        newWord.learnedAt = item.learnedAt || Date.now()
+        newWord.learnedAt = typeof item.learnedAt === 'number' ? item.learnedAt : Date.now()
       }
       data.words.push(newWord)
       imported++
     }
 
     setData(data)
+
+    // WARN-004: if overlay was hidden, show a word from newly imported batch
+    if (!scheduler.getCurrentWord() && imported > 0) {
+      scheduler.showNext()
+    }
 
     mainWindowRef = getMainWindow()
     notifyMainWindow()

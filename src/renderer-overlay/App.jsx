@@ -22,6 +22,7 @@ export default function App() {
     // Main process pushes a new word every 3 minutes (or after markLearned)
     const unsubShow = window.overlayApi.onShowWord((newWord) => {
       setAllLearned(false)
+      setMarking(false) // BUG-001: reset button state when new word arrives
       setWord(newWord)
     })
 

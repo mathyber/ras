@@ -60,7 +60,7 @@ export default function App() {
       }
       setEditingWord(null)
       setActiveTab(TABS.LIST)
-      await loadWords()
+      // NOTE-002: loadWords() is called via onWordsChanged push from main — no duplicate call needed
     } catch (err) {
       showNotification(err.message, 'error')
     }
@@ -70,7 +70,7 @@ export default function App() {
     try {
       await window.api.deleteWord(id)
       showNotification('Word deleted')
-      await loadWords()
+      // NOTE-002: loadWords() is called via onWordsChanged push from main — no duplicate call needed
     } catch (err) {
       showNotification(err.message, 'error')
     }
@@ -92,7 +92,7 @@ export default function App() {
       return
     }
     showNotification(`Imported ${result.imported} word(s), skipped ${result.skipped}`)
-    await loadWords()
+    // NOTE-002: loadWords() is called via onWordsChanged push from main — no duplicate call needed
   }
 
   // ─── Stats ──────────────────────────────────────────────────────────────────

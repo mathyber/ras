@@ -81,16 +81,40 @@ function resetTimer() {
 function startScheduler(overlayWindow) {
   overlayWindowRef = overlayWindow
 
-  // Show the first word immediately when the overlay content is loaded
+  // BUG-004: start timer only after first word is shown so the 3-min window
+  // is counted from the moment the user first sees the word, not from app launch
   overlayWindow.webContents.on('did-finish-load', () => {
     showNext()
+    resetTimer()
   })
+}
 
-  resetTimer()
+/**
+ * Stops the scheduler timer. Call on app quit.
+ */
+function stopScheduler() {
+  if (timerHandle) {
+    clearInterval(timerHandle)
+    timerHandle = null
+  }
+}
+
+/**
+ * If the currently displayed word was edited, re-sends it to the overlay.
+ * Called after words:update so the overlay reflects the change immediately.
+ */
+function refreshCurrentWord() {
+  if (!currentWord || !overlayWindowRef || overlayWindowRef.isDestroyed()) return
+  const data = getData()
+  const updated = data.words.find(w => w.id === currentWord.id)
+  if (updated && !updated.learned) {
+    currentWord = updated
+    overlayWindowRef.webContents.send('overlay:showWord', updated)
+  }
 }
 
 function getCurrentWord() {
   return currentWord
 }
 
-module.exports = { startScheduler, resetTimer, showNext, getCurrentWord, getNextWord }
+module.exports = { startScheduler, stopScheduler, resetTimer, showNext, getCurrentWord, getNextWord, refreshCurrentWord }

@@ -10,7 +10,7 @@ const scheduler = require('./wordScheduler')
 
 let overlayWindow = null
 let mainWindow = null  // lazy — only created when user opens from tray
-let isQuitting = false
+let cursorPollingHandle = null
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ function openMainWindow() {
 // mouse-event passthrough based on whether the cursor is over the overlay.
 
 function startCursorPolling() {
-  setInterval(() => {
+  cursorPollingHandle = setInterval(() => {
     if (!overlayWindow || overlayWindow.isDestroyed() || !overlayWindow.isVisible()) return
 
     const cursor = screen.getCursorScreenPoint()
@@ -87,7 +87,12 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
-  isQuitting = true
+  // WARN-001: stop all intervals to avoid resource leaks
+  if (cursorPollingHandle) {
+    clearInterval(cursorPollingHandle)
+    cursorPollingHandle = null
+  }
+  scheduler.stopScheduler()
 
   // Allow overlay and main window to actually close on quit
   if (overlayWindow && !overlayWindow.isDestroyed()) {

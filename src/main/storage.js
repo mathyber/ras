@@ -9,7 +9,7 @@ const DEFAULT_DATA = {
   version: 1,
   words: [],
   lastShownId: null,
-  settings: { overlayMode: 'classic', overlayPositions: { classic: null, taskbar: null } }
+  settings: { overlayMode: 'classic', overlayTheme: 'dark', overlayPositions: { classic: null, taskbar: null } }
 }
 
 let dataFilePath = null
@@ -115,10 +115,13 @@ function createWord(word, translation, example = '') {
 function getSettings() {
   const data = getData()
   if (!data.settings || typeof data.settings !== 'object') {
-    data.settings = { overlayMode: 'classic', overlayPositions: { classic: null, taskbar: null } }
+    data.settings = { overlayMode: 'classic', overlayTheme: 'dark', overlayPositions: { classic: null, taskbar: null } }
   }
   if (!data.settings.overlayPositions) {
     data.settings.overlayPositions = { classic: null, taskbar: null }
+  }
+  if (!data.settings.overlayTheme) {
+    data.settings.overlayTheme = 'dark'
   }
   return data.settings
 }

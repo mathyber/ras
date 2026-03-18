@@ -4,6 +4,7 @@ import WordList from './components/WordList.jsx'
 import WordForm from './components/WordForm.jsx'
 import ImportButton from './components/ImportButton.jsx'
 import Settings from './components/Settings.jsx'
+import { tr } from './i18n.js'
 
 const TABS = {
   LIST: 'list',
@@ -16,6 +17,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(TABS.LIST)
   const [editingWord, setEditingWord] = useState(null) // word object being edited
   const [notification, setNotification] = useState(null) // { message, type: 'success'|'error' }
+  const [lang, setLang] = useState(() => localStorage.getItem('slvk_lang') || 'en')
 
   // ─── Data Loading ───────────────────────────────────────────────────────────
 
@@ -24,9 +26,9 @@ export default function App() {
       const all = await window.api.getWords()
       setWords(all)
     } catch (err) {
-      showNotification('Failed to load words: ' + err.message, 'error')
+      showNotification(tr[lang].notifLoadFail + ': ' + err.message, 'error')
     }
-  }, [])
+  }, [lang])
 
   useEffect(() => {
     loadWords()
@@ -49,16 +51,25 @@ export default function App() {
     setTimeout(() => setNotification(null), 3000)
   }
 
+  // ─── Lang Toggle ────────────────────────────────────────────────────────────
+
+  function toggleLang() {
+    const next = lang === 'en' ? 'ru' : 'en'
+    setLang(next)
+    localStorage.setItem('slvk_lang', next)
+  }
+
   // ─── Word Operations ────────────────────────────────────────────────────────
 
   async function handleSaveWord({ word, translation, example }) {
+    const t = tr[lang]
     try {
       if (editingWord) {
         await window.api.updateWord(editingWord.id, word, translation, example)
-        showNotification('Word updated successfully')
+        showNotification(t.notifUpdated)
       } else {
         await window.api.addWord(word, translation, example)
-        showNotification('Word added successfully')
+        showNotification(t.notifAdded)
       }
       setEditingWord(null)
       setActiveTab(TABS.LIST)
@@ -69,10 +80,21 @@ export default function App() {
   }
 
   async function handleDeleteWord(id) {
+    const t = tr[lang]
     try {
       await window.api.deleteWord(id)
-      showNotification('Word deleted')
+      showNotification(t.notifDeleted)
       // NOTE-002: loadWords() is called via onWordsChanged push from main — no duplicate call needed
+    } catch (err) {
+      showNotification(err.message, 'error')
+    }
+  }
+
+  async function handleUnlearnWord(id) {
+    const t = tr[lang]
+    try {
+      await window.api.unlearnWord(id)
+      showNotification(t.notifUnlearned)
     } catch (err) {
       showNotification(err.message, 'error')
     }
@@ -89,11 +111,12 @@ export default function App() {
   }
 
   async function handleImport(result) {
+    const t = tr[lang]
     if (result.error) {
       showNotification(result.error, 'error')
       return
     }
-    showNotification(`Imported ${result.imported} word(s), skipped ${result.skipped}`)
+    showNotification(t.notifImported(result.imported, result.skipped))
     // NOTE-002: loadWords() is called via onWordsChanged push from main — no duplicate call needed
   }
 
@@ -105,19 +128,24 @@ export default function App() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
+  const t = tr[lang]
+
   return (
     <div style={styles.container}>
       {/* Header */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
-          <span style={styles.logo}>RAS</span>
-          <span style={styles.headerTitle}>Dictionary</span>
+          <span style={styles.logo}>Slovariken</span>
+          <span style={styles.headerTitle}>{t.appSubtitle}</span>
         </div>
         <div style={styles.stats}>
-          <StatBadge label="Total" value={totalWords} color="var(--accent)" />
-          <StatBadge label="Pending" value={unlearnedWords} color="var(--text-secondary)" />
-          <StatBadge label="Learned" value={learnedWords} color="var(--success)" />
+          <StatBadge label={t.statTotal} value={totalWords} color="var(--accent)" />
+          <StatBadge label={t.statPending} value={unlearnedWords} color="var(--text-secondary)" />
+          <StatBadge label={t.statLearned} value={learnedWords} color="var(--success)" />
         </div>
+        <button onClick={toggleLang} style={styles.langToggle}>
+          {lang === 'en' ? 'RU' : 'EN'}
+        </button>
       </header>
 
       {/* Tab Bar */}
@@ -126,22 +154,22 @@ export default function App() {
           active={activeTab === TABS.LIST}
           onClick={() => { setActiveTab(TABS.LIST); setEditingWord(null) }}
         >
-          All Words
+          {t.tabWords}
         </TabButton>
         <TabButton
           active={activeTab === TABS.ADD}
           onClick={() => { setActiveTab(TABS.ADD); setEditingWord(null) }}
         >
-          {editingWord ? 'Edit Word' : 'Add Word'}
+          {editingWord ? t.tabEdit : t.tabAdd}
         </TabButton>
         <TabButton
           active={activeTab === TABS.SETTINGS}
           onClick={() => { setActiveTab(TABS.SETTINGS); setEditingWord(null) }}
         >
-          Settings
+          {t.tabSettings}
         </TabButton>
         <div style={styles.tabBarRight}>
-          <ImportButton onImport={handleImport} />
+          <ImportButton onImport={handleImport} lang={lang} />
         </div>
       </nav>
 
@@ -152,6 +180,8 @@ export default function App() {
             words={words}
             onEdit={handleEditWord}
             onDelete={handleDeleteWord}
+            onUnlearn={handleUnlearnWord}
+            lang={lang}
           />
         )}
         {activeTab === TABS.ADD && (
@@ -159,9 +189,10 @@ export default function App() {
             initialValues={editingWord}
             onSave={handleSaveWord}
             onCancel={handleCancelEdit}
+            lang={lang}
           />
         )}
-        {activeTab === TABS.SETTINGS && <Settings />}
+        {activeTab === TABS.SETTINGS && <Settings lang={lang} />}
       </main>
 
       {/* Toast Notification */}
@@ -302,5 +333,17 @@ const styles = {
     boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
     zIndex: 9999,
     animation: 'fadeIn 0.2s ease'
+  },
+  langToggle: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    borderRadius: 4,
+    color: 'var(--text-secondary)',
+    fontSize: 12,
+    fontWeight: 700,
+    padding: '3px 8px',
+    cursor: 'pointer',
+    letterSpacing: 1,
+    marginLeft: 16
   }
 }

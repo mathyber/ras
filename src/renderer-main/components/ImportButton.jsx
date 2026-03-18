@@ -2,8 +2,9 @@
 // Triggers the JSON import flow via IPC and reports the result upward.
 
 import React, { useState } from 'react'
+import { tr } from '../i18n.js'
 
-export default function ImportButton({ onImport }) {
+export default function ImportButton({ onImport, lang }) {
   const [loading, setLoading] = useState(false)
 
   async function handleClick() {
@@ -26,7 +27,7 @@ export default function ImportButton({ onImport }) {
       disabled={loading}
       title="Import words from a JSON file"
     >
-      {loading ? 'Importing…' : 'Import JSON'}
+      {loading ? 'Importing…' : (tr[lang]?.btnImport || 'Import JSON')}
     </button>
   )
 }

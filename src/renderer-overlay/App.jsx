@@ -1,17 +1,54 @@
 // App.jsx (Renderer Process — overlay window)
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 
+function getColors(theme) {
+  if (theme === 'light') {
+    return {
+      classicBg: 'rgba(248, 248, 248, 0.96)',
+      classicShadow: '0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.07)',
+      taskbarBg: 'rgba(240, 240, 240, 0.98)',
+      taskbarBorderColor: 'rgba(37, 99, 235, 0.7)',
+      word: '#111111',
+      translation: '#444444',
+      example: '#777777',
+      sep: '#aaaaaa',
+      btnColor: '#2563eb',
+      btnBorder: 'rgba(37, 99, 235, 0.4)',
+      btnBg: 'rgba(37, 99, 235, 0.1)',
+      btnBgBorder: 'rgba(37, 99, 235, 0.3)',
+      allLearned: '#059669',
+    }
+  }
+  return {
+    classicBg: 'rgba(20, 20, 20, 0.92)',
+    classicShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
+    taskbarBg: 'rgba(24, 24, 24, 0.97)',
+    taskbarBorderColor: 'rgba(74, 158, 255, 0.6)',
+    word: '#ffffff',
+    translation: '#cccccc',
+    example: '#888888',
+    sep: '#555555',
+    btnColor: '#4A9EFF',
+    btnBorder: 'rgba(74, 158, 255, 0.35)',
+    btnBg: 'rgba(74, 158, 255, 0.2)',
+    btnBgBorder: 'rgba(74, 158, 255, 0.4)',
+    allLearned: '#3ecf8e',
+  }
+}
+
 export default function App() {
   const [word, setWord] = useState(null)
   const [allLearned, setAllLearned] = useState(false)
   const [marking, setMarking] = useState(false)
   const [mode, setMode] = useState('classic')
+  const [theme, setTheme] = useState('dark')
   const cardRef = useRef(null)
 
   // ─── IPC Subscriptions ──────────────────────────────────────────────────────
 
   useEffect(() => {
     window.overlayApi.getMode().then(m => setMode(m || 'classic'))
+    window.overlayApi.getTheme().then(t => setTheme(t || 'dark'))
     window.overlayApi.getCurrentWord().then(w => { if (w) setWord(w) })
 
     const unsubShow = window.overlayApi.onShowWord((newWord) => {
@@ -27,10 +64,13 @@ export default function App() {
 
     const unsubMode = window.overlayApi.onModeChanged((m) => setMode(m))
 
+    const unsubTheme = window.overlayApi.onThemeChanged((t) => setTheme(t))
+
     return () => {
       if (typeof unsubShow === 'function') unsubShow()
       if (typeof unsubAll === 'function') unsubAll()
       if (typeof unsubMode === 'function') unsubMode()
+      if (typeof unsubTheme === 'function') unsubTheme()
     }
   }, [])
 
@@ -59,10 +99,36 @@ export default function App() {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
+  const c = getColors(theme)
+
+  const classicCard = {
+    ...BASE,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    gap: 6,
+    background: c.classicBg,
+    borderRadius: 12,
+    padding: '8px 12px',
+    boxShadow: c.classicShadow,
+    WebkitAppRegion: 'drag'
+  }
+
+  const taskbarCard = {
+    ...BASE,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    background: c.taskbarBg,
+    borderRadius: 0,
+    padding: '0 10px 0 12px',
+    borderLeft: `2px solid ${c.taskbarBorderColor}`,
+    WebkitAppRegion: 'drag'
+  }
+
   if (allLearned) {
     return (
-      <div style={mode === 'taskbar' ? taskbarCardStyle : classicCardStyle}>
-        <div style={s.allLearnedText}>All words learned!</div>
+      <div style={mode === 'taskbar' ? taskbarCard : classicCard}>
+        <div style={{ ...s.allLearnedText, color: c.allLearned }}>All words learned!</div>
       </div>
     )
   }
@@ -74,14 +140,14 @@ export default function App() {
       <div
         ref={cardRef}
         className="overlay-card"
-        style={taskbarCardStyle}
+        style={taskbarCard}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <div style={s.taskbarContent}>
-          <span style={s.taskbarWord}>{word.word}</span>
-          <span style={s.taskbarSep}>·</span>
-          <span style={s.taskbarTranslation}>{word.translation}</span>
+          <span style={{ ...s.taskbarWord, color: c.word }}>{word.word}</span>
+          <span style={{ ...s.taskbarSep, color: c.sep }}>·</span>
+          <span style={{ ...s.taskbarTranslation, color: c.translation }}>{word.translation}</span>
           {word.example && (
             <span style={s.taskbarExample} title={word.example}>
               {word.example}
@@ -90,7 +156,7 @@ export default function App() {
         </div>
         <button
           className="btn-learned"
-          style={{ ...s.taskbarBtn, cursor: marking ? 'default' : 'pointer' }}
+          style={{ ...s.taskbarBtn, color: c.btnColor, border: `1px solid ${c.btnBorder}`, cursor: marking ? 'default' : 'pointer' }}
           onClick={handleMarkLearned}
           disabled={marking}
         >
@@ -105,19 +171,19 @@ export default function App() {
     <div
       ref={cardRef}
       className="overlay-card"
-      style={classicCardStyle}
+      style={classicCard}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div className="word-content" key={word.id} style={s.classicContent}>
-        <div style={s.wordText}>{word.word}</div>
-        <div style={s.translationText}>{word.translation}</div>
-        {word.example ? <div style={s.exampleText}>{word.example}</div> : null}
+        <div style={{ ...s.wordText, color: c.word }}>{word.word}</div>
+        <div style={{ ...s.translationText, color: c.translation }}>{word.translation}</div>
+        {word.example ? <div style={{ ...s.exampleText, color: c.example }}>{word.example}</div> : null}
       </div>
 
       <button
         className="btn-learned"
-        style={{ ...s.learnedBtn, cursor: marking ? 'default' : 'pointer' }}
+        style={{ ...s.learnedBtn, color: c.btnColor, background: c.btnBg, border: `1px solid ${c.btnBgBorder}`, cursor: marking ? 'default' : 'pointer' }}
         onClick={handleMarkLearned}
         disabled={marking}
       >
@@ -140,34 +206,6 @@ const BASE = {
   boxSizing: 'border-box'
 }
 
-// ─── Classic card ─────────────────────────────────────────────────────────────
-
-const classicCardStyle = {
-  ...BASE,
-  flexDirection: 'column',
-  justifyContent: 'flex-start',
-  alignItems: 'stretch',
-  gap: 6,
-  background: 'rgba(20, 20, 20, 0.92)',
-  borderRadius: 12,
-  padding: '8px 12px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
-  WebkitAppRegion: 'drag'
-}
-
-// ─── Taskbar card ─────────────────────────────────────────────────────────────
-
-const taskbarCardStyle = {
-  ...BASE,
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  background: 'rgba(24, 24, 24, 0.97)',
-  borderRadius: 0,
-  padding: '0 10px 0 12px',
-  borderLeft: '2px solid rgba(74, 158, 255, 0.6)',
-  WebkitAppRegion: 'drag'
-}
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = {
@@ -180,7 +218,6 @@ const s = {
   wordText: {
     fontSize: 20,
     fontWeight: 700,
-    color: '#ffffff',
     lineHeight: 1.2,
     letterSpacing: '-0.3px',
     whiteSpace: 'nowrap',
@@ -189,14 +226,12 @@ const s = {
   },
   translationText: {
     fontSize: 14,
-    color: '#cccccc',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis'
   },
   exampleText: {
     fontSize: 11,
-    color: '#888888',
     fontStyle: 'italic',
     lineHeight: 1.4,
     marginTop: 2,
@@ -208,10 +243,7 @@ const s = {
   learnedBtn: {
     alignSelf: 'flex-end',
     padding: '3px 10px',
-    background: 'rgba(74, 158, 255, 0.2)',
-    border: '1px solid rgba(74, 158, 255, 0.4)',
     borderRadius: 6,
-    color: '#4A9EFF',
     fontSize: 11,
     fontWeight: 600,
     letterSpacing: 0.3,
@@ -232,18 +264,15 @@ const s = {
   taskbarWord: {
     fontSize: 13,
     fontWeight: 700,
-    color: '#ffffff',
     whiteSpace: 'nowrap',
     flexShrink: 0
   },
   taskbarSep: {
-    color: '#555',
     fontSize: 12,
     flexShrink: 0
   },
   taskbarTranslation: {
     fontSize: 12,
-    color: '#aaaaaa',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -262,9 +291,7 @@ const s = {
   taskbarBtn: {
     padding: '2px 8px',
     background: 'transparent',
-    border: '1px solid rgba(74, 158, 255, 0.35)',
     borderRadius: 4,
-    color: '#4A9EFF',
     fontSize: 12,
     fontWeight: 700,
     flexShrink: 0,
@@ -275,7 +302,6 @@ const s = {
   // shared
   allLearnedText: {
     fontSize: 12,
-    color: '#3ecf8e',
     fontWeight: 600,
     textAlign: 'center',
     margin: 'auto'

@@ -159,7 +159,7 @@ function createMainWindow() {
     height: 650,
     minWidth: 600,
     minHeight: 400,
-    title: 'RAS — Dictionary',
+    title: 'Slovariken',
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,

@@ -45,5 +45,13 @@ contextBridge.exposeInMainWorld('overlayApi', {
     const handler = (_event, mode) => callback(mode)
     ipcRenderer.on('overlay:modeChanged', handler)
     return () => ipcRenderer.removeListener('overlay:modeChanged', handler)
+  },
+
+  getTheme: () => ipcRenderer.invoke('overlay:getTheme'),
+
+  onThemeChanged: (callback) => {
+    const handler = (_event, theme) => callback(theme)
+    ipcRenderer.on('overlay:themeChanged', handler)
+    return () => ipcRenderer.removeListener('overlay:themeChanged', handler)
   }
 })

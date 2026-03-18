@@ -1,7 +1,7 @@
 // main.js (Main Process)
 // Application entry point. Bootstraps storage, windows, tray, IPC, and the word scheduler.
 
-const { app, screen } = require('electron')
+const { app, screen, Menu } = require('electron')
 const { loadData, getOverlayPosition, saveOverlayPosition } = require('./storage')
 const { createOverlayWindow, createMainWindow, getOverlayBounds } = require('./windowManager')
 const { createTray, destroyTray } = require('./trayManager')
@@ -77,6 +77,7 @@ function startCursorPolling() {
 // ─── App Lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
   // 1. Load persisted data into the in-memory cache
   const data = loadData()
   overlayMode = data?.settings?.overlayMode || 'classic'

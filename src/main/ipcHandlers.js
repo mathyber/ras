@@ -227,6 +227,35 @@ function registerIpcHandlers({ getMainWindow, getOverlayWindow, onModeChange }) 
 
     return { success: true }
   })
+
+  ipcMain.handle('settings:setOverlayTheme', (_event, theme) => {
+    if (theme !== 'dark' && theme !== 'light') throw new Error('Invalid overlay theme')
+    const settings = getSettings()
+    settings.overlayTheme = theme
+    saveSettings(settings)
+    overlayWindowRef = getOverlayWindow()
+    if (overlayWindowRef && !overlayWindowRef.isDestroyed()) {
+      overlayWindowRef.webContents.send('overlay:themeChanged', theme)
+    }
+    return { success: true }
+  })
+
+  ipcMain.handle('overlay:getTheme', () => {
+    return getSettings().overlayTheme || 'dark'
+  })
+
+  ipcMain.handle('words:unlearn', (_event, id) => {
+    if (!id) throw new Error('id is required')
+    const data = getData()
+    const idx = data.words.findIndex(w => w.id === id)
+    if (idx === -1) throw new Error(`Word not found: ${id}`)
+    data.words[idx].learned = false
+    data.words[idx].learnedAt = null
+    setData(data)
+    mainWindowRef = getMainWindow()
+    notifyMainWindow()
+    return { success: true }
+  })
 }
 
 module.exports = { registerIpcHandlers }

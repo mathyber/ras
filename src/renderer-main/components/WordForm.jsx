@@ -2,8 +2,10 @@
 // Form for adding a new word or editing an existing one.
 
 import React, { useState, useEffect } from 'react'
+import { tr } from '../i18n.js'
 
-export default function WordForm({ initialValues, onSave, onCancel }) {
+export default function WordForm({ initialValues, onSave, onCancel, lang }) {
+  const t = tr[lang] || tr.en
   const [word, setWord] = useState('')
   const [translation, setTranslation] = useState('')
   const [example, setExample] = useState('')
@@ -28,8 +30,8 @@ export default function WordForm({ initialValues, onSave, onCancel }) {
 
   function validate() {
     const errs = {}
-    if (!word.trim()) errs.word = 'Word is required'
-    if (!translation.trim()) errs.translation = 'Translation is required'
+    if (!word.trim()) errs.word = t.fieldWordRequired
+    if (!translation.trim()) errs.translation = t.fieldTranslationRequired
     return errs
   }
 
@@ -53,15 +55,15 @@ export default function WordForm({ initialValues, onSave, onCancel }) {
     <div style={styles.container}>
       <div style={styles.card}>
         <h2 style={styles.heading}>
-          {isEditing ? 'Edit Word' : 'Add New Word'}
+          {isEditing ? t.formHeadingEdit : t.formHeadingAdd}
         </h2>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <Field
-            label="Word"
+            label={t.fieldWord}
             required
             error={errors.word}
-            hint="The word or phrase to learn"
+            hint={t.fieldWordHint}
           >
             <input
               style={{ ...styles.input, ...(errors.word ? styles.inputError : {}) }}
@@ -74,10 +76,10 @@ export default function WordForm({ initialValues, onSave, onCancel }) {
           </Field>
 
           <Field
-            label="Translation"
+            label={t.fieldTranslation}
             required
             error={errors.translation}
-            hint="Translation or definition"
+            hint={t.fieldTranslationHint}
           >
             <input
               style={{ ...styles.input, ...(errors.translation ? styles.inputError : {}) }}
@@ -89,8 +91,8 @@ export default function WordForm({ initialValues, onSave, onCancel }) {
           </Field>
 
           <Field
-            label="Example"
-            hint="An example sentence (optional)"
+            label={t.fieldExample}
+            hint={t.fieldExampleHint}
           >
             <textarea
               style={{ ...styles.input, ...styles.textarea }}
@@ -108,7 +110,7 @@ export default function WordForm({ initialValues, onSave, onCancel }) {
                 style={styles.btnSecondary}
                 onClick={onCancel}
               >
-                Cancel
+                {t.btnCancel}
               </button>
             )}
             <button
@@ -116,7 +118,7 @@ export default function WordForm({ initialValues, onSave, onCancel }) {
               style={{ ...styles.btnPrimary, opacity: saving ? 0.7 : 1 }}
               disabled={saving}
             >
-              {saving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Word')}
+              {saving ? t.btnSaving : (isEditing ? t.btnSaveChanges : t.btnAddWord)}
             </button>
           </div>
         </form>

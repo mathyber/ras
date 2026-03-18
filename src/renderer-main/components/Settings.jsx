@@ -1,5 +1,6 @@
 // Settings.jsx — overlay display mode picker
 import React, { useState, useEffect } from 'react'
+import { tr } from '../i18n.js'
 
 // ─── Preview mini-styles ──────────────────────────────────────────────────────
 // Must be declared before MODES which references them in JSX
@@ -66,53 +67,72 @@ const p = {
   tbTrans:{ fontSize: 6, color: '#aaa' }
 }
 
-const MODES = [
-  {
-    id: 'classic',
-    title: 'Classic',
-    description: 'Floating card in the bottom-right corner, above the taskbar',
-    preview: (
-      <div style={p.classicPreview}>
-        <div style={p.screen}>
-          <div style={p.taskbar} />
-          <div style={p.classicCard}>
-            <div style={p.cardWord}>word</div>
-            <div style={p.cardTrans}>перевод</div>
-          </div>
-        </div>
-      </div>
-    )
-  },
-  {
-    id: 'taskbar',
-    title: 'Taskbar',
-    description: 'Slim bar embedded on top of the Windows taskbar',
-    preview: (
-      <div style={p.classicPreview}>
-        <div style={p.screen}>
-          <div style={p.taskbarWithOverlay}>
-            <div style={p.taskbarOverlay}>
-              <span style={p.tbWord}>word</span>
-              <span style={p.tbDot}>·</span>
-              <span style={p.tbTrans}>перевод</span>
+export default function Settings({ lang }) {
+  const t = tr[lang] || tr.en
+  const [currentMode, setCurrentMode] = useState('classic')
+  const [currentTheme, setCurrentTheme] = useState('dark')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const MODES = [
+    {
+      id: 'classic',
+      title: t.modeClassicTitle,
+      description: t.modeClassicDesc,
+      preview: (
+        <div style={p.classicPreview}>
+          <div style={p.screen}>
+            <div style={p.taskbar} />
+            <div style={p.classicCard}>
+              <div style={p.cardWord}>word</div>
+              <div style={p.cardTrans}>перевод</div>
             </div>
           </div>
         </div>
-      </div>
-    )
-  }
-]
-
-export default function Settings() {
-  const [currentMode, setCurrentMode] = useState('classic')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+      )
+    },
+    {
+      id: 'taskbar',
+      title: t.modeTaskbarTitle,
+      description: t.modeTaskbarDesc,
+      preview: (
+        <div style={p.classicPreview}>
+          <div style={p.screen}>
+            <div style={p.taskbarWithOverlay}>
+              <div style={p.taskbarOverlay}>
+                <span style={p.tbWord}>word</span>
+                <span style={p.tbDot}>·</span>
+                <span style={p.tbTrans}>перевод</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  ]
 
   useEffect(() => {
     window.api.getSettings().then(s => {
       if (s?.overlayMode) setCurrentMode(s.overlayMode)
+      if (s?.overlayTheme) setCurrentTheme(s.overlayTheme)
     })
   }, [])
+
+  async function handleThemeSelect(theme) {
+    if (theme === currentTheme || saving) return
+    setSaving(true)
+    setSaved(false)
+    try {
+      await window.api.setOverlayTheme(theme)
+      setCurrentTheme(theme)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      console.error('[settings] setOverlayTheme failed:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   async function handleSelect(mode) {
     if (mode === currentMode || saving) return
@@ -130,10 +150,15 @@ export default function Settings() {
     }
   }
 
+  const THEMES = [
+    { id: 'dark',  title: t.themeDarkTitle,  description: t.themeDarkDesc },
+    { id: 'light', title: t.themeLightTitle, description: t.themeLightDesc },
+  ]
+
   return (
     <div style={st.container}>
-      <h2 style={st.heading}>Overlay display mode</h2>
-      <p style={st.sub}>Choose how the word overlay appears on your screen. Takes effect immediately.</p>
+      <h2 style={st.heading}>{t.settingsModeTitle}</h2>
+      <p style={st.sub}>{t.settingsModeSubtitle}</p>
 
       <div style={st.cards}>
         {MODES.map(m => {
@@ -162,7 +187,40 @@ export default function Settings() {
         })}
       </div>
 
-      {saved && <div style={st.toast}>Applied!</div>}
+      <h2 style={{ ...st.heading, marginTop: 28 }}>{t.settingsThemeTitle}</h2>
+      <p style={st.sub}>{t.settingsThemeSubtitle}</p>
+
+      <div style={st.cards}>
+        {THEMES.map(theme => {
+          const active = currentTheme === theme.id
+          return (
+            <button
+              key={theme.id}
+              style={{
+                ...st.card,
+                ...(active ? st.cardActive : {}),
+                ...(saving ? { opacity: 0.6, cursor: 'wait' } : {})
+              }}
+              onClick={() => handleThemeSelect(theme.id)}
+              disabled={saving}
+            >
+              <div style={{ ...st.themePreview, background: theme.id === 'dark' ? 'rgba(20,20,20,0.92)' : 'rgba(248,248,248,0.96)', border: '1px solid ' + (theme.id === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)') }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: theme.id === 'dark' ? '#fff' : '#111' }}>word</span>
+                <span style={{ fontSize: 10, color: theme.id === 'dark' ? '#ccc' : '#444', marginTop: 2 }}>перевод</span>
+              </div>
+              <div style={st.cardLabel}>
+                <div style={{ ...st.cardTitle, ...(active ? st.cardTitleActive : {}) }}>
+                  {active && <span style={st.dot} />}
+                  {theme.title}
+                </div>
+                <div style={st.cardDesc}>{theme.description}</div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {saved && <div style={st.toast}>{t.settingsApplied}</div>}
     </div>
   )
 }
@@ -240,5 +298,15 @@ const st = {
     borderRadius: 'var(--radius)',
     fontSize: 13,
     fontWeight: 500
-  }
+  },
+  themePreview: {
+    width: '100%',
+    height: 70,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    margin: '10px 10px 10px'
+  },
 }

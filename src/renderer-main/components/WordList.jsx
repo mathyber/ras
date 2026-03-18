@@ -2,6 +2,7 @@
 // Displays words in a table with filtering and action buttons.
 
 import React, { useState } from 'react'
+import { tr } from '../i18n.js'
 
 const FILTERS = {
   ALL: 'all',
@@ -9,7 +10,8 @@ const FILTERS = {
   LEARNED: 'learned'
 }
 
-export default function WordList({ words, onEdit, onDelete }) {
+export default function WordList({ words, onEdit, onDelete, onUnlearn, lang }) {
+  const t = tr[lang] || tr.en
   const [filter, setFilter] = useState(FILTERS.ALL)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
@@ -35,29 +37,29 @@ export default function WordList({ words, onEdit, onDelete }) {
       {/* Filter Row */}
       <div style={styles.filterRow}>
         <FilterChip active={filter === FILTERS.ALL} onClick={() => setFilter(FILTERS.ALL)}>
-          All ({words.length})
+          {t.filterAll(words.length)}
         </FilterChip>
         <FilterChip active={filter === FILTERS.UNLEARNED} onClick={() => setFilter(FILTERS.UNLEARNED)}>
-          Pending ({words.filter(w => !w.learned).length})
+          {t.filterPending(words.filter(w => !w.learned).length)}
         </FilterChip>
         <FilterChip active={filter === FILTERS.LEARNED} onClick={() => setFilter(FILTERS.LEARNED)}>
-          Learned ({words.filter(w => w.learned).length})
+          {t.filterLearned(words.filter(w => w.learned).length)}
         </FilterChip>
       </div>
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <EmptyState filter={filter} />
+        <EmptyState filter={filter} t={t} />
       ) : (
         <div style={styles.tableWrapper}>
           <table style={styles.table}>
             <thead>
               <tr style={styles.headerRow}>
-                <Th style={{ width: '20%' }}>Word</Th>
-                <Th style={{ width: '22%' }}>Translation</Th>
-                <Th style={{ width: '36%' }}>Example</Th>
-                <Th style={{ width: '10%', textAlign: 'center' }}>Status</Th>
-                <Th style={{ width: '12%', textAlign: 'right' }}>Actions</Th>
+                <Th style={{ width: '18%' }}>{t.colWord}</Th>
+                <Th style={{ width: '20%' }}>{t.colTranslation}</Th>
+                <Th style={{ width: '28%' }}>{t.colExample}</Th>
+                <Th style={{ width: '10%', textAlign: 'center' }}>{t.colStatus}</Th>
+                <Th style={{ width: '24%', textAlign: 'right' }}>{t.colActions}</Th>
               </tr>
             </thead>
             <tbody>
@@ -67,6 +69,8 @@ export default function WordList({ words, onEdit, onDelete }) {
                   word={word}
                   onEdit={() => onEdit(word)}
                   onDeleteClick={() => handleDeleteClick(word.id)}
+                  onUnlearn={() => onUnlearn(word.id)}
+                  t={t}
                 />
               ))}
             </tbody>
@@ -78,13 +82,13 @@ export default function WordList({ words, onEdit, onDelete }) {
       {confirmDeleteId && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <p style={styles.modalText}>Delete this word? This cannot be undone.</p>
+            <p style={styles.modalText}>{t.deleteConfirm}</p>
             <div style={styles.modalActions}>
               <button style={styles.btnCancel} onClick={() => setConfirmDeleteId(null)}>
-                Cancel
+                {t.btnCancel}
               </button>
               <button style={styles.btnDanger} onClick={handleConfirmDelete}>
-                Delete
+                {t.btnDelete}
               </button>
             </div>
           </div>
@@ -94,7 +98,7 @@ export default function WordList({ words, onEdit, onDelete }) {
   )
 }
 
-function WordRow({ word, onEdit, onDeleteClick }) {
+function WordRow({ word, onEdit, onDeleteClick, onUnlearn, t }) {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -114,18 +118,23 @@ function WordRow({ word, onEdit, onDeleteClick }) {
       </td>
       <td style={{ ...styles.cell, textAlign: 'center' }}>
         {word.learned ? (
-          <span style={styles.badgeLearned}>Learned</span>
+          <span style={styles.badgeLearned}>{t.badgeLearned}</span>
         ) : (
-          <span style={styles.badgePending}>Pending</span>
+          <span style={styles.badgePending}>{t.badgePending}</span>
         )}
       </td>
       <td style={{ ...styles.cell, textAlign: 'right' }}>
         <div style={styles.actions}>
-          <ActionButton onClick={onEdit} title="Edit">
-            Edit
+          {word.learned && (
+            <ActionButton onClick={onUnlearn} title={t.btnUnlearn}>
+              {t.btnUnlearn}
+            </ActionButton>
+          )}
+          <ActionButton onClick={onEdit} title={t.btnEdit}>
+            {t.btnEdit}
           </ActionButton>
-          <ActionButton onClick={onDeleteClick} title="Delete" danger>
-            Del
+          <ActionButton onClick={onDeleteClick} title={t.btnDel} danger>
+            {t.btnDel}
           </ActionButton>
         </div>
       </td>
@@ -169,11 +178,11 @@ function ActionButton({ onClick, children, danger }) {
   )
 }
 
-function EmptyState({ filter }) {
+function EmptyState({ filter, t }) {
   const messages = {
-    [FILTERS.ALL]: 'No words yet. Add your first word using the "Add Word" tab.',
-    [FILTERS.UNLEARNED]: 'All caught up! No pending words.',
-    [FILTERS.LEARNED]: 'No learned words yet. Keep going!'
+    [FILTERS.ALL]: t.emptyAll,
+    [FILTERS.UNLEARNED]: t.emptyPending,
+    [FILTERS.LEARNED]: t.emptyLearned
   }
   return (
     <div style={styles.emptyState}>

@@ -3,10 +3,12 @@ import React, { useState, useEffect, useCallback } from 'react'
 import WordList from './components/WordList.jsx'
 import WordForm from './components/WordForm.jsx'
 import ImportButton from './components/ImportButton.jsx'
+import Settings from './components/Settings.jsx'
 
 const TABS = {
   LIST: 'list',
-  ADD: 'add'
+  ADD: 'add',
+  SETTINGS: 'settings'
 }
 
 export default function App() {
@@ -132,6 +134,12 @@ export default function App() {
         >
           {editingWord ? 'Edit Word' : 'Add Word'}
         </TabButton>
+        <TabButton
+          active={activeTab === TABS.SETTINGS}
+          onClick={() => { setActiveTab(TABS.SETTINGS); setEditingWord(null) }}
+        >
+          Settings
+        </TabButton>
         <div style={styles.tabBarRight}>
           <ImportButton onImport={handleImport} />
         </div>
@@ -153,6 +161,7 @@ export default function App() {
             onCancel={handleCancelEdit}
           />
         )}
+        {activeTab === TABS.SETTINGS && <Settings />}
       </main>
 
       {/* Toast Notification */}

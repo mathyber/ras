@@ -63,13 +63,14 @@ function startCursorPolling() {
 
 app.whenReady().then(() => {
   // 1. Load persisted data into the in-memory cache
-  loadData()
+  const data = loadData()
+  const overlayMode = data?.settings?.overlayMode || 'classic'
 
   // 2. Register all IPC handlers before any window is created
-  registerIpcHandlers({ getMainWindow })
+  registerIpcHandlers({ getMainWindow, getOverlayWindow: () => overlayWindow })
 
   // 3. Create the always-on-top overlay (hidden until a word is ready)
-  overlayWindow = createOverlayWindow()
+  overlayWindow = createOverlayWindow(overlayMode)
 
   // 4. Start the word scheduler — it will show the first word once the overlay loads
   scheduler.startScheduler(overlayWindow)

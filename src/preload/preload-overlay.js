@@ -37,5 +37,13 @@ contextBridge.exposeInMainWorld('overlayApi', {
     const handler = (_event) => callback()
     ipcRenderer.on('overlay:allLearned', handler)
     return () => ipcRenderer.removeListener('overlay:allLearned', handler)
+  },
+
+  getMode: () => ipcRenderer.invoke('overlay:getMode'),
+
+  onModeChanged: (callback) => {
+    const handler = (_event, mode) => callback(mode)
+    ipcRenderer.on('overlay:modeChanged', handler)
+    return () => ipcRenderer.removeListener('overlay:modeChanged', handler)
   }
 })

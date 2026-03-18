@@ -56,5 +56,8 @@ contextBridge.exposeInMainWorld('api', {
     const handler = (_event) => callback()
     ipcRenderer.on('words:changed', handler)
     return () => ipcRenderer.removeListener('words:changed', handler)
-  }
+  },
+
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  setOverlayMode: (mode) => ipcRenderer.invoke('settings:setOverlayMode', mode)
 })

@@ -4,9 +4,23 @@ import electron from 'vite-plugin-electron'
 import renderer from 'vite-plugin-electron-renderer'
 import { resolve } from 'path'
 
+// Vite adds crossorigin to <script type="module"> tags, which breaks loading
+// via file:// protocol in Electron (Chromium CORS check). Strip it from HTML.
+function removeCrossOrigin() {
+  return {
+    name: 'remove-crossorigin',
+    transformIndexHtml(html) {
+      return html
+        .replace(/<script type="module" crossorigin/g, '<script type="module"')
+        .replace(/<link rel="modulepreload" crossorigin/g, '<link rel="modulepreload"')
+    }
+  }
+}
+
 export default defineConfig({
   plugins: [
     react(),
+    removeCrossOrigin(),
     electron([
       {
         // Main process — each file built separately so require('./storage') etc. resolve at runtime

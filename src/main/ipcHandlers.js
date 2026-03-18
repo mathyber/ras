@@ -3,10 +3,12 @@
 
 const { ipcMain, dialog } = require('electron')
 const fs = require('fs')
-const { getData, setData, createWord } = require('./storage')
+const { getData, setData, createWord, getSettings, saveSettings } = require('./storage')
+const { repositionOverlay } = require('./windowManager')
 const scheduler = require('./wordScheduler')
 
 let mainWindowRef = null
+let overlayWindowRef = null
 
 /**
  * Pushes a 'words:changed' event to the main window renderer if it exists.
@@ -22,7 +24,7 @@ function notifyMainWindow() {
  * @param {object} opts
  * @param {Function} opts.getMainWindow  - returns the current mainWindow (may be null/lazy)
  */
-function registerIpcHandlers({ getMainWindow }) {
+function registerIpcHandlers({ getMainWindow, getOverlayWindow }) {
   // Keep a live reference so notifyMainWindow always uses the latest window
   ipcMain.handle('words:getAll', () => {
     const data = getData()
@@ -191,6 +193,35 @@ function registerIpcHandlers({ getMainWindow }) {
 
     mainWindowRef = getMainWindow()
     notifyMainWindow()
+
+    return { success: true }
+  })
+
+  ipcMain.handle('overlay:getMode', () => {
+    return getSettings().overlayMode
+  })
+
+  ipcMain.handle('settings:get', () => {
+    return getSettings()
+  })
+
+  ipcMain.handle('settings:setOverlayMode', (_event, mode) => {
+    if (mode !== 'classic' && mode !== 'taskbar') {
+      throw new Error('Invalid overlay mode')
+    }
+
+    const settings = getSettings()
+    settings.overlayMode = mode
+    saveSettings(settings)
+
+    // Reposition overlay window immediately
+    overlayWindowRef = getOverlayWindow()
+    repositionOverlay(overlayWindowRef, mode)
+
+    // Notify overlay renderer so it can switch layout
+    if (overlayWindowRef && !overlayWindowRef.isDestroyed()) {
+      overlayWindowRef.webContents.send('overlay:modeChanged', mode)
+    }
 
     return { success: true }
   })

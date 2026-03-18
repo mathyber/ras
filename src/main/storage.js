@@ -8,7 +8,8 @@ const { app } = require('electron')
 const DEFAULT_DATA = {
   version: 1,
   words: [],
-  lastShownId: null
+  lastShownId: null,
+  settings: { overlayMode: 'classic' }
 }
 
 let dataFilePath = null
@@ -111,4 +112,18 @@ function createWord(word, translation, example = '') {
   }
 }
 
-module.exports = { loadData, saveData, getData, setData, createWord }
+function getSettings() {
+  const data = getData()
+  if (!data.settings || typeof data.settings !== 'object') {
+    data.settings = { overlayMode: 'classic' }
+  }
+  return data.settings
+}
+
+function saveSettings(settings) {
+  const data = getData()
+  data.settings = settings
+  setData(data)
+}
+
+module.exports = { loadData, saveData, getData, setData, createWord, getSettings, saveSettings }

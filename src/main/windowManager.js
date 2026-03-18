@@ -14,19 +14,64 @@ function getPreloadPath(filename) {
 }
 
 /**
- * Creates the always-on-top transparent overlay window.
- * Positioned in the bottom-right corner of the primary display work area.
- * @returns {BrowserWindow}
+ * Calculates overlay window bounds and alwaysOnTop level based on mode.
+ * @param {'classic'|'taskbar'} mode
+ * @returns {{ x, y, width, height, alwaysOnTopLevel }}
  */
-function createOverlayWindow() {
-  const { workArea } = screen.getPrimaryDisplay()
-  const preloadPath = getPreloadPath('preload-overlay.js')
+function getOverlayBounds(mode) {
+  const display = screen.getPrimaryDisplay()
+  const { workArea, bounds } = display
 
-  const win = new BrowserWindow({
+  if (mode === 'taskbar') {
+    // Taskbar occupies the strip below workArea
+    const taskbarHeight = bounds.height - (workArea.y + workArea.height)
+    const height = Math.max(taskbarHeight > 0 ? taskbarHeight : 48, 40)
+    const width = 320
+    return {
+      width,
+      height,
+      x: workArea.x + workArea.width - width,
+      y: workArea.y + workArea.height,
+      alwaysOnTopLevel: 'screen-saver'
+    }
+  }
+
+  // classic: floating card just above taskbar, bottom-right
+  return {
     width: 320,
     height: 130,
     x: workArea.x + workArea.width - 325,
-    y: workArea.y + workArea.height - 130, // flush with taskbar top, no gap
+    y: workArea.y + workArea.height - 130,
+    alwaysOnTopLevel: 'floating'
+  }
+}
+
+/**
+ * Repositions and resizes an existing overlay window to match the given mode.
+ * @param {BrowserWindow} win
+ * @param {'classic'|'taskbar'} mode
+ */
+function repositionOverlay(win, mode) {
+  if (!win || win.isDestroyed()) return
+  const { x, y, width, height, alwaysOnTopLevel } = getOverlayBounds(mode)
+  win.setBounds({ x, y, width, height })
+  win.setAlwaysOnTop(true, alwaysOnTopLevel)
+}
+
+/**
+ * Creates the always-on-top transparent overlay window.
+ * @param {'classic'|'taskbar'} mode
+ * @returns {BrowserWindow}
+ */
+function createOverlayWindow(mode = 'classic') {
+  const { x, y, width, height, alwaysOnTopLevel } = getOverlayBounds(mode)
+  const preloadPath = getPreloadPath('preload-overlay.js')
+
+  const win = new BrowserWindow({
+    width,
+    height,
+    x,
+    y,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -35,7 +80,7 @@ function createOverlayWindow() {
     movable: false,
     focusable: false,
     hasShadow: false,
-    show: false, // shown by wordScheduler once a word is ready
+    show: false,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -43,6 +88,9 @@ function createOverlayWindow() {
       sandbox: true
     }
   })
+
+  // Apply precise always-on-top level (screen-saver goes above taskbar)
+  win.setAlwaysOnTop(true, alwaysOnTopLevel)
 
   // Prevent the window from being destroyed — hide it instead
   win.on('close', (e) => {
@@ -96,4 +144,4 @@ function createMainWindow() {
   return win
 }
 
-module.exports = { createOverlayWindow, createMainWindow }
+module.exports = { createOverlayWindow, createMainWindow, repositionOverlay }

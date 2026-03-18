@@ -1,46 +1,40 @@
 // App.jsx (Renderer Process — overlay window)
-// Minimal floating card showing the current word.
-// Hover detection for the "Mark Learned" button uses CSS classes, not useState,
-// to avoid triggering React re-renders on every mouse-move event.
-
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 
 export default function App() {
   const [word, setWord] = useState(null)
   const [allLearned, setAllLearned] = useState(false)
   const [marking, setMarking] = useState(false)
+  const [mode, setMode] = useState('classic')
   const cardRef = useRef(null)
 
   // ─── IPC Subscriptions ──────────────────────────────────────────────────────
 
   useEffect(() => {
-    // Fetch the word that was set before this component mounted
-    window.overlayApi.getCurrentWord().then(w => {
-      if (w) setWord(w)
-    })
+    window.overlayApi.getMode().then(m => setMode(m || 'classic'))
+    window.overlayApi.getCurrentWord().then(w => { if (w) setWord(w) })
 
-    // Main process pushes a new word every 3 minutes (or after markLearned)
     const unsubShow = window.overlayApi.onShowWord((newWord) => {
       setAllLearned(false)
-      setMarking(false) // BUG-001: reset button state when new word arrives
+      setMarking(false)
       setWord(newWord)
     })
 
-    // Main process fires this when all words are learned
     const unsubAll = window.overlayApi.onAllLearned(() => {
       setAllLearned(true)
       setWord(null)
     })
 
+    const unsubMode = window.overlayApi.onModeChanged((m) => setMode(m))
+
     return () => {
       if (typeof unsubShow === 'function') unsubShow()
       if (typeof unsubAll === 'function') unsubAll()
+      if (typeof unsubMode === 'function') unsubMode()
     }
   }, [])
 
-  // ─── Hover: toggle CSS class on card element ─────────────────────────────────
-  // Using DOM manipulation here intentionally: we want zero React re-renders for
-  // mouse-move-adjacent events. The CSS class drives the button visibility.
+  // ─── Hover (CSS class, no re-render) ────────────────────────────────────────
 
   const handleMouseEnter = useCallback(() => {
     cardRef.current?.classList.add('hovered')
@@ -57,7 +51,6 @@ export default function App() {
     setMarking(true)
     try {
       await window.overlayApi.markLearned(word.id)
-      // The main process will push a new word via onShowWord
     } catch (err) {
       console.error('[overlay] markLearned failed:', err)
       setMarking(false)
@@ -68,41 +61,63 @@ export default function App() {
 
   if (allLearned) {
     return (
-      <div style={cardStyle}>
-        <div style={styles.allLearnedText}>All words learned!</div>
+      <div style={mode === 'taskbar' ? taskbarCardStyle : classicCardStyle}>
+        <div style={s.allLearnedText}>All words learned!</div>
       </div>
     )
   }
 
-  if (!word) {
-    // Nothing to show — the window should be hidden by main process already
-    return null
+  if (!word) return null
+
+  if (mode === 'taskbar') {
+    return (
+      <div
+        ref={cardRef}
+        className="overlay-card"
+        style={taskbarCardStyle}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div style={s.taskbarContent}>
+          <span style={s.taskbarWord}>{word.word}</span>
+          <span style={s.taskbarSep}>·</span>
+          <span style={s.taskbarTranslation}>{word.translation}</span>
+          {word.example && (
+            <span style={s.taskbarExample} title={word.example}>
+              {word.example}
+            </span>
+          )}
+        </div>
+        <button
+          className="btn-learned"
+          style={{ ...s.taskbarBtn, cursor: marking ? 'default' : 'pointer' }}
+          onClick={handleMarkLearned}
+          disabled={marking}
+        >
+          {marking ? '…' : '✓'}
+        </button>
+      </div>
+    )
   }
 
+  // classic mode
   return (
     <div
       ref={cardRef}
       className="overlay-card"
-      style={cardStyle}
+      style={classicCardStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Word content — keyed by id so it re-animates on word change */}
-      <div className="word-content" key={word.id} style={styles.content}>
-        <div style={styles.wordText}>{word.word}</div>
-        <div style={styles.translationText}>{word.translation}</div>
-        {word.example ? (
-          <div style={styles.exampleText}>{word.example}</div>
-        ) : null}
+      <div className="word-content" key={word.id} style={s.classicContent}>
+        <div style={s.wordText}>{word.word}</div>
+        <div style={s.translationText}>{word.translation}</div>
+        {word.example ? <div style={s.exampleText}>{word.example}</div> : null}
       </div>
 
-      {/* Mark Learned button — visibility controlled by CSS .hovered class */}
       <button
         className="btn-learned"
-        style={{
-          ...styles.learnedBtn,
-          cursor: marking ? 'default' : 'pointer'
-        }}
+        style={{ ...s.learnedBtn, cursor: marking ? 'default' : 'pointer' }}
         onClick={handleMarkLearned}
         disabled={marking}
       >
@@ -112,24 +127,49 @@ export default function App() {
   )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Shared base ──────────────────────────────────────────────────────────────
 
-const cardStyle = {
+const BASE = {
   width: '100%',
   height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  overflow: 'hidden',
+  position: 'relative',
+  boxSizing: 'border-box'
+}
+
+// ─── Classic card ─────────────────────────────────────────────────────────────
+
+const classicCardStyle = {
+  ...BASE,
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  alignItems: 'stretch',
   background: 'rgba(20, 20, 20, 0.92)',
   borderRadius: 12,
   padding: '12px 14px 10px',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
-  position: 'relative',
-  overflow: 'hidden'
+  boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)'
 }
 
-const styles = {
-  content: {
+// ─── Taskbar card ─────────────────────────────────────────────────────────────
+
+const taskbarCardStyle = {
+  ...BASE,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  background: 'rgba(24, 24, 24, 0.97)',
+  borderRadius: 0,
+  padding: '0 10px 0 12px',
+  borderLeft: '2px solid rgba(74, 158, 255, 0.6)'
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = {
+  // classic
+  classicContent: {
     display: 'flex',
     flexDirection: 'column',
     gap: 3,
@@ -141,7 +181,6 @@ const styles = {
     color: '#ffffff',
     lineHeight: 1.2,
     letterSpacing: '-0.3px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis'
@@ -149,7 +188,6 @@ const styles = {
   translationText: {
     fontSize: 14,
     color: '#cccccc',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis'
@@ -158,7 +196,6 @@ const styles = {
     fontSize: 11,
     color: '#888888',
     fontStyle: 'italic',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     lineHeight: 1.4,
     marginTop: 2,
     overflow: 'hidden',
@@ -175,16 +212,67 @@ const styles = {
     color: '#4A9EFF',
     fontSize: 11,
     fontWeight: 600,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     letterSpacing: 0.3,
     transition: 'background 0.15s',
     flexShrink: 0
   },
-  allLearnedText: {
+
+  // taskbar
+  taskbarContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden'
+  },
+  taskbarWord: {
     fontSize: 13,
+    fontWeight: 700,
+    color: '#ffffff',
+    whiteSpace: 'nowrap',
+    flexShrink: 0
+  },
+  taskbarSep: {
+    color: '#555',
+    fontSize: 12,
+    flexShrink: 0
+  },
+  taskbarTranslation: {
+    fontSize: 12,
+    color: '#aaaaaa',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    flexShrink: 1
+  },
+  taskbarExample: {
+    fontSize: 11,
+    color: '#666',
+    fontStyle: 'italic',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    flexShrink: 2,
+    cursor: 'default'
+  },
+  taskbarBtn: {
+    padding: '2px 8px',
+    background: 'transparent',
+    border: '1px solid rgba(74, 158, 255, 0.35)',
+    borderRadius: 4,
+    color: '#4A9EFF',
+    fontSize: 12,
+    fontWeight: 700,
+    flexShrink: 0,
+    marginLeft: 6
+  },
+
+  // shared
+  allLearnedText: {
+    fontSize: 12,
     color: '#3ecf8e',
     fontWeight: 600,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     textAlign: 'center',
     margin: 'auto'
   }

@@ -73,10 +73,10 @@ function getOverlayBounds(mode, savedPos) {
 
   // classic: floating card, default bottom-right, or saved position
   const defaultX = wa.x + wa.width - 325
-  const defaultY = wa.y + wa.height - 130
+  const defaultY = wa.y + wa.height - 100
   return {
-    width: 320,
-    height: 130,
+    width: 300,
+    height: 100,
     x: savedPos ? savedPos.x : defaultX,
     y: savedPos ? savedPos.y : defaultY,
     alwaysOnTopLevel: 'floating'

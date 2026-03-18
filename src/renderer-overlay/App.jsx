@@ -145,11 +145,12 @@ const BASE = {
 const classicCardStyle = {
   ...BASE,
   flexDirection: 'column',
-  justifyContent: 'space-between',
+  justifyContent: 'flex-start',
   alignItems: 'stretch',
+  gap: 6,
   background: 'rgba(20, 20, 20, 0.92)',
   borderRadius: 12,
-  padding: '12px 14px 10px',
+  padding: '8px 12px',
   boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
   WebkitAppRegion: 'drag'
 }
@@ -174,8 +175,7 @@ const s = {
   classicContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 3,
-    flex: 1
+    gap: 2
   },
   wordText: {
     fontSize: 20,

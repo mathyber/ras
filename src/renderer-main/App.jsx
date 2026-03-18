@@ -132,7 +132,7 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      {/* Header */}
+      {/* Header — also acts as the drag region for the frameless window */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
           <span style={styles.logo}>Slovariken</span>
@@ -143,9 +143,13 @@ export default function App() {
           <StatBadge label={t.statPending} value={unlearnedWords} color="var(--text-secondary)" />
           <StatBadge label={t.statLearned} value={learnedWords} color="var(--success)" />
         </div>
-        <button onClick={toggleLang} style={styles.langToggle}>
-          {lang === 'en' ? 'RU' : 'EN'}
-        </button>
+        <div style={styles.headerRight}>
+          <button onClick={toggleLang} style={styles.langToggle}>
+            {lang === 'en' ? 'RU' : 'EN'}
+          </button>
+          <button onClick={() => window.api.minimizeWindow()} style={styles.winBtn} title="Minimize">─</button>
+          <button onClick={() => window.api.closeWindow()} style={{ ...styles.winBtn, ...styles.winBtnClose }} title="Close">✕</button>
+        </div>
       </header>
 
       {/* Tab Bar */}
@@ -247,15 +251,24 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 20px',
+    padding: '10px 0 10px 20px',
     background: 'var(--bg-secondary)',
     borderBottom: '1px solid var(--border)',
-    flexShrink: 0
+    flexShrink: 0,
+    WebkitAppRegion: 'drag'
   },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10
+    gap: 10,
+    WebkitAppRegion: 'no-drag'
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    alignSelf: 'stretch',
+    WebkitAppRegion: 'no-drag'
   },
   logo: {
     fontSize: 18,
@@ -269,7 +282,8 @@ const styles = {
   },
   stats: {
     display: 'flex',
-    gap: 20
+    gap: 20,
+    WebkitAppRegion: 'no-drag'
   },
   statBadge: {
     display: 'flex',
@@ -344,6 +358,23 @@ const styles = {
     padding: '3px 8px',
     cursor: 'pointer',
     letterSpacing: 1,
-    marginLeft: 16
+    marginRight: 8
+  },
+  winBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-muted)',
+    fontSize: 14,
+    lineHeight: 1,
+    width: 46,
+    alignSelf: 'stretch',
+    cursor: 'pointer',
+    transition: 'background 0.1s, color 0.1s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  winBtnClose: {
+    fontSize: 13
   }
 }

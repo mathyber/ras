@@ -3,7 +3,7 @@
 
 const { getData, setData } = require('./storage')
 
-const INTERVAL_MS = 180_000 // 3 minutes
+let intervalMs = 180_000 // default 3 minutes, configurable via setIntervalMs()
 
 let overlayWindowRef = null
 let timerHandle = null
@@ -70,7 +70,7 @@ function resetTimer() {
 
   timerHandle = setInterval(() => {
     showNext()
-  }, INTERVAL_MS)
+  }, intervalMs)
 }
 
 /**
@@ -117,4 +117,9 @@ function getCurrentWord() {
   return currentWord
 }
 
-module.exports = { startScheduler, stopScheduler, resetTimer, showNext, getCurrentWord, getNextWord, refreshCurrentWord }
+function setIntervalMs(ms) {
+  intervalMs = ms
+  resetTimer()
+}
+
+module.exports = { startScheduler, stopScheduler, resetTimer, showNext, getCurrentWord, getNextWord, refreshCurrentWord, setIntervalMs }

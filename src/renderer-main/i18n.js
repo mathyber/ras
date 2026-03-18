@@ -59,6 +59,10 @@ export const tr = {
     themeDarkDesc: 'Dark semi-transparent background',
     themeLightTitle: 'Light',
     themeLightDesc: 'Light semi-transparent background',
+    settingsIntervalTitle: 'Word rotation interval',
+    settingsIntervalSubtitle: 'How often the overlay switches to the next word.',
+    settingsIntervalMin: 'min',
+    settingsIntervalCustom: 'Custom (sec):',
     settingsApplied: 'Applied!',
   },
   ru: {
@@ -121,6 +125,10 @@ export const tr = {
     themeDarkDesc: 'Тёмный полупрозрачный фон',
     themeLightTitle: 'Светлая',
     themeLightDesc: 'Светлый полупрозрачный фон',
+    settingsIntervalTitle: 'Интервал смены слова',
+    settingsIntervalSubtitle: 'Как часто оверлей переключает слово.',
+    settingsIntervalMin: 'мин',
+    settingsIntervalCustom: 'Своё (сек):',
     settingsApplied: 'Готово!',
   }
 }

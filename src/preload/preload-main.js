@@ -61,5 +61,8 @@ contextBridge.exposeInMainWorld('api', {
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setOverlayMode: (mode) => ipcRenderer.invoke('settings:setOverlayMode', mode),
   setOverlayTheme: (theme) => ipcRenderer.invoke('settings:setOverlayTheme', theme),
-  unlearnWord: (id) => ipcRenderer.invoke('words:unlearn', id)
+  unlearnWord: (id) => ipcRenderer.invoke('words:unlearn', id),
+  setOverlayInterval: (seconds) => ipcRenderer.invoke('settings:setOverlayInterval', seconds),
+  minimizeWindow: () => ipcRenderer.send('window:minimize'),
+  closeWindow: () => ipcRenderer.send('window:hide')
 })

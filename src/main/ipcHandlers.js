@@ -26,6 +26,16 @@ function notifyMainWindow() {
  */
 function registerIpcHandlers({ getMainWindow, getOverlayWindow, onModeChange }) {
   // Keep a live reference so notifyMainWindow always uses the latest window
+  ipcMain.on('window:minimize', () => {
+    const win = getMainWindow()
+    if (win && !win.isDestroyed()) win.minimize()
+  })
+
+  ipcMain.on('window:hide', () => {
+    const win = getMainWindow()
+    if (win && !win.isDestroyed()) win.hide()
+  })
+
   ipcMain.handle('words:getAll', () => {
     const data = getData()
     return data.words
@@ -237,6 +247,16 @@ function registerIpcHandlers({ getMainWindow, getOverlayWindow, onModeChange }) 
     if (overlayWindowRef && !overlayWindowRef.isDestroyed()) {
       overlayWindowRef.webContents.send('overlay:themeChanged', theme)
     }
+    return { success: true }
+  })
+
+  ipcMain.handle('settings:setOverlayInterval', (_event, seconds) => {
+    const s = Math.max(1, Math.min(86400, Math.round(Number(seconds))))
+    if (!isFinite(s)) throw new Error('Invalid interval')
+    const settings = getSettings()
+    settings.overlayInterval = s
+    saveSettings(settings)
+    scheduler.setIntervalMs(s * 1000)
     return { success: true }
   })
 

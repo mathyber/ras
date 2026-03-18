@@ -9,7 +9,7 @@ const DEFAULT_DATA = {
   version: 1,
   words: [],
   lastShownId: null,
-  settings: { overlayMode: 'classic', overlayTheme: 'dark', overlayPositions: { classic: null, taskbar: null } }
+  settings: { overlayMode: 'classic', overlayTheme: 'dark', overlayInterval: 180, overlayPositions: { classic: null, taskbar: null } }
 }
 
 let dataFilePath = null
@@ -122,6 +122,9 @@ function getSettings() {
   }
   if (!data.settings.overlayTheme) {
     data.settings.overlayTheme = 'dark'
+  }
+  if (!data.settings.overlayInterval) {
+    data.settings.overlayInterval = 180
   }
   return data.settings
 }

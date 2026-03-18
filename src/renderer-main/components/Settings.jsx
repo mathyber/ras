@@ -111,12 +111,42 @@ export default function Settings({ lang }) {
     }
   ]
 
+  const [intervalSec, setIntervalSec] = useState(180)
+  const [customMin, setCustomMin] = useState('')
+
   useEffect(() => {
     window.api.getSettings().then(s => {
       if (s?.overlayMode) setCurrentMode(s.overlayMode)
       if (s?.overlayTheme) setCurrentTheme(s.overlayTheme)
+      if (s?.overlayInterval) setIntervalSec(s.overlayInterval)
     })
   }, [])
+
+  async function handleIntervalSelect(seconds) {
+    if (seconds === intervalSec || saving) return
+    setSaving(true)
+    setSaved(false)
+    try {
+      await window.api.setOverlayInterval(seconds)
+      setIntervalSec(seconds)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      console.error('[settings] setOverlayInterval failed:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleCustomSubmit() {
+    const val = Math.round(parseFloat(customMin))
+    if (!isFinite(val) || val < 1) return
+    setCustomMin('')
+    handleIntervalSelect(val)
+  }
+
+  const PRESETS_SEC = [60, 180, 300, 600, 1800]
+  const isCustom = !PRESETS_SEC.includes(intervalSec)
 
   async function handleThemeSelect(theme) {
     if (theme === currentTheme || saving) return
@@ -220,6 +250,40 @@ export default function Settings({ lang }) {
         })}
       </div>
 
+      <h2 style={{ ...st.heading, marginTop: 28 }}>{t.settingsIntervalTitle}</h2>
+      <p style={st.sub}>{t.settingsIntervalSubtitle}</p>
+
+      <div style={st.intervalRow}>
+        {[1, 3, 5, 10, 30].map(min => {
+          const sec = min * 60
+          const active = intervalSec === sec
+          return (
+            <button
+              key={min}
+              style={{ ...st.intervalChip, ...(active ? st.intervalChipActive : {}), ...(saving ? { opacity: 0.6 } : {}) }}
+              onClick={() => handleIntervalSelect(sec)}
+              disabled={saving}
+            >
+              {min} {t.settingsIntervalMin}
+            </button>
+          )
+        })}
+        <div style={{ ...st.intervalCustom, ...(isCustom ? st.intervalCustomActive : {}) }}>
+          <span style={st.intervalCustomLabel}>{t.settingsIntervalCustom}</span>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            style={{ ...st.intervalInput, ...(isCustom ? st.intervalInputActive : {}) }}
+            value={customMin}
+            onChange={e => setCustomMin(e.target.value)}
+            onBlur={handleCustomSubmit}
+            onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+            placeholder={isCustom ? String(intervalSec) : '…'}
+          />
+        </div>
+      </div>
+
       {saved && <div style={st.toast}>{t.settingsApplied}</div>}
     </div>
   )
@@ -230,7 +294,10 @@ export default function Settings({ lang }) {
 const st = {
   container: {
     padding: '28px 28px',
-    maxWidth: 620
+    maxWidth: 620,
+    overflowY: 'auto',
+    height: '100%',
+    boxSizing: 'border-box'
   },
   heading: {
     fontSize: 18,
@@ -309,4 +376,57 @@ const st = {
     borderRadius: 6,
     margin: '10px 10px 10px'
   },
+  intervalRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 8,
+    alignItems: 'center'
+  },
+  intervalChip: {
+    padding: '6px 14px',
+    border: '1px solid var(--border)',
+    borderRadius: 20,
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'all 0.15s'
+  },
+  intervalChipActive: {
+    background: 'var(--accent)',
+    borderColor: 'var(--accent)',
+    color: '#fff'
+  },
+  intervalCustom: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 4,
+    padding: '5px 12px',
+    border: '1px solid var(--border)',
+    borderRadius: 20,
+    transition: 'all 0.15s'
+  },
+  intervalCustomActive: {
+    background: 'var(--accent)',
+    borderColor: 'var(--accent)'
+  },
+  intervalCustomLabel: {
+    fontSize: 13,
+    color: 'var(--text-muted)'
+  },
+  intervalInput: {
+    width: 52,
+    padding: '0',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-primary)',
+    fontSize: 13,
+    outline: 'none',
+    textAlign: 'center'
+  },
+  intervalInputActive: {
+    color: '#fff'
+  }
 }

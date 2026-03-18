@@ -81,6 +81,8 @@ app.whenReady().then(() => {
   // 1. Load persisted data into the in-memory cache
   const data = loadData()
   overlayMode = data?.settings?.overlayMode || 'classic'
+  const savedInterval = data?.settings?.overlayInterval
+  if (savedInterval) scheduler.setIntervalMs(savedInterval * 1000)
 
   // 2. Register all IPC handlers before any window is created
   registerIpcHandlers({

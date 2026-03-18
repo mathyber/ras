@@ -160,6 +160,7 @@ function createMainWindow() {
     minWidth: 600,
     minHeight: 400,
     title: 'Slovariken',
+    frame: false,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,

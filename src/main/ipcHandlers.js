@@ -3,7 +3,7 @@
 
 const { ipcMain, dialog } = require('electron')
 const fs = require('fs')
-const { getData, setData, createWord, getSettings, saveSettings } = require('./storage')
+const { getData, setData, createWord, getSettings, saveSettings, getOverlayPosition } = require('./storage')
 const { repositionOverlay } = require('./windowManager')
 const scheduler = require('./wordScheduler')
 
@@ -216,9 +216,9 @@ function registerIpcHandlers({ getMainWindow, getOverlayWindow, onModeChange }) 
 
     if (typeof onModeChange === 'function') onModeChange(mode)
 
-    // Reposition overlay window immediately
+    // Reposition overlay window immediately, restoring saved position for this mode
     overlayWindowRef = getOverlayWindow()
-    repositionOverlay(overlayWindowRef, mode)
+    repositionOverlay(overlayWindowRef, mode, getOverlayPosition(mode))
 
     // Notify overlay renderer so it can switch layout
     if (overlayWindowRef && !overlayWindowRef.isDestroyed()) {

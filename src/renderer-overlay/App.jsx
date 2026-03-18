@@ -150,7 +150,8 @@ const classicCardStyle = {
   background: 'rgba(20, 20, 20, 0.92)',
   borderRadius: 12,
   padding: '12px 14px 10px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)'
+  boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
+  WebkitAppRegion: 'drag'
 }
 
 // ─── Taskbar card ─────────────────────────────────────────────────────────────
@@ -162,7 +163,8 @@ const taskbarCardStyle = {
   background: 'rgba(24, 24, 24, 0.97)',
   borderRadius: 0,
   padding: '0 10px 0 12px',
-  borderLeft: '2px solid rgba(74, 158, 255, 0.6)'
+  borderLeft: '2px solid rgba(74, 158, 255, 0.6)',
+  WebkitAppRegion: 'drag'
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -214,7 +216,8 @@ const s = {
     fontWeight: 600,
     letterSpacing: 0.3,
     transition: 'background 0.15s',
-    flexShrink: 0
+    flexShrink: 0,
+    WebkitAppRegion: 'no-drag'
   },
 
   // taskbar
@@ -265,7 +268,8 @@ const s = {
     fontSize: 12,
     fontWeight: 700,
     flexShrink: 0,
-    marginLeft: 6
+    marginLeft: 6,
+    WebkitAppRegion: 'no-drag'
   },
 
   // shared

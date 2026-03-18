@@ -9,7 +9,7 @@ const DEFAULT_DATA = {
   version: 1,
   words: [],
   lastShownId: null,
-  settings: { overlayMode: 'classic' }
+  settings: { overlayMode: 'classic', overlayPositions: { classic: null, taskbar: null } }
 }
 
 let dataFilePath = null
@@ -115,9 +115,22 @@ function createWord(word, translation, example = '') {
 function getSettings() {
   const data = getData()
   if (!data.settings || typeof data.settings !== 'object') {
-    data.settings = { overlayMode: 'classic' }
+    data.settings = { overlayMode: 'classic', overlayPositions: { classic: null, taskbar: null } }
+  }
+  if (!data.settings.overlayPositions) {
+    data.settings.overlayPositions = { classic: null, taskbar: null }
   }
   return data.settings
+}
+
+function getOverlayPosition(mode) {
+  return getSettings().overlayPositions?.[mode] ?? null
+}
+
+function saveOverlayPosition(mode, pos) {
+  const settings = getSettings()
+  settings.overlayPositions[mode] = pos
+  saveSettings(settings)
 }
 
 function saveSettings(settings) {
@@ -126,4 +139,4 @@ function saveSettings(settings) {
   setData(data)
 }
 
-module.exports = { loadData, saveData, getData, setData, createWord, getSettings, saveSettings }
+module.exports = { loadData, saveData, getData, setData, createWord, getSettings, saveSettings, getOverlayPosition, saveOverlayPosition }

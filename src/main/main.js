@@ -2,8 +2,8 @@
 // Application entry point. Bootstraps storage, windows, tray, IPC, and the word scheduler.
 
 const { app, screen } = require('electron')
-const { loadData } = require('./storage')
-const { createOverlayWindow, createMainWindow } = require('./windowManager')
+const { loadData, getOverlayPosition, saveOverlayPosition } = require('./storage')
+const { createOverlayWindow, createMainWindow, getOverlayBounds } = require('./windowManager')
 const { createTray, destroyTray } = require('./trayManager')
 const { registerIpcHandlers } = require('./ipcHandlers')
 const scheduler = require('./wordScheduler')
@@ -89,7 +89,24 @@ app.whenReady().then(() => {
   })
 
   // 3. Create the always-on-top overlay (hidden until a word is ready)
-  overlayWindow = createOverlayWindow(overlayMode)
+  overlayWindow = createOverlayWindow(overlayMode, getOverlayPosition(overlayMode))
+
+  // Save position when user drags the overlay.
+  // For taskbar mode: snap y back to the taskbar strip, persist only x.
+  // For classic mode: persist both x and y.
+  overlayWindow.on('moved', () => {
+    if (!overlayWindow || overlayWindow.isDestroyed()) return
+    const b = overlayWindow.getBounds()
+    if (overlayMode === 'taskbar') {
+      const { y, height } = getOverlayBounds('taskbar')
+      if (b.y !== y || b.height !== height) {
+        overlayWindow.setBounds({ ...b, y, height })
+      }
+      saveOverlayPosition('taskbar', { x: b.x })
+    } else {
+      saveOverlayPosition('classic', { x: b.x, y: b.y })
+    }
+  })
 
   // 4. Start the word scheduler — it will show the first word once the overlay loads
   scheduler.startScheduler(overlayWindow)

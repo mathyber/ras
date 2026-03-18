@@ -17,15 +17,14 @@ function getPreloadPath(filename) {
  * Calculates overlay window bounds and alwaysOnTop level based on mode.
  * Detects taskbar edge (bottom/top/left/right) from workArea vs bounds delta.
  * @param {'classic'|'taskbar'} mode
+ * @param {{x:number,y:number}|null} [savedPos]  persisted position (x only for taskbar)
  * @returns {{ x, y, width, height, alwaysOnTopLevel }}
  */
-function getOverlayBounds(mode) {
+function getOverlayBounds(mode, savedPos) {
   const display = screen.getPrimaryDisplay()
   const { workArea: wa, bounds: b } = display
 
   if (mode === 'taskbar') {
-    // Compute how much space is trimmed from each edge (taskbar location).
-    // All coordinates are in global screen space, so use absolute values.
     const trimBottom = (b.y + b.height) - (wa.y + wa.height)
     const trimTop    = wa.y - b.y
     const trimRight  = (b.x + b.width)  - (wa.x + wa.width)
@@ -33,35 +32,38 @@ function getOverlayBounds(mode) {
 
     const OVERLAY_WIDTH = 320
 
+    function clampX(x, width) {
+      return Math.max(wa.x, Math.min(x, wa.x + wa.width - width))
+    }
+
     if (trimBottom >= trimTop && trimBottom >= trimRight && trimBottom >= trimLeft && trimBottom > 0) {
-      // Taskbar at bottom (most common)
       const height = Math.max(trimBottom, 40)
       const width  = Math.min(OVERLAY_WIDTH, wa.width)
-      return { width, height, x: wa.x + Math.floor((wa.width - width) / 2), y: wa.y + wa.height, alwaysOnTopLevel: 'screen-saver' }
+      const x = savedPos ? clampX(savedPos.x, width) : wa.x + Math.floor((wa.width - width) / 2)
+      return { width, height, x, y: wa.y + wa.height, alwaysOnTopLevel: 'screen-saver' }
     }
 
     if (trimTop >= trimBottom && trimTop >= trimRight && trimTop >= trimLeft && trimTop > 0) {
-      // Taskbar at top
       const height = Math.max(trimTop, 40)
       const width  = Math.min(OVERLAY_WIDTH, wa.width)
-      return { width, height, x: wa.x + Math.floor((wa.width - width) / 2), y: b.y, alwaysOnTopLevel: 'screen-saver' }
+      const x = savedPos ? clampX(savedPos.x, width) : wa.x + Math.floor((wa.width - width) / 2)
+      return { width, height, x, y: b.y, alwaysOnTopLevel: 'screen-saver' }
     }
 
     if (trimRight >= trimLeft && trimRight > 0) {
-      // Taskbar on right
       const width  = Math.max(trimRight, 40)
       const height = Math.min(120, wa.height)
-      return { width, height, x: wa.x + wa.width, y: wa.y + wa.height - height, alwaysOnTopLevel: 'screen-saver' }
+      const y = savedPos ? Math.max(wa.y, Math.min(savedPos.y, wa.y + wa.height - height)) : wa.y + wa.height - height
+      return { width, height, x: wa.x + wa.width, y, alwaysOnTopLevel: 'screen-saver' }
     }
 
     if (trimLeft > 0) {
-      // Taskbar on left
       const width  = Math.max(trimLeft, 40)
       const height = Math.min(120, wa.height)
-      return { width, height, x: b.x, y: wa.y + wa.height - height, alwaysOnTopLevel: 'screen-saver' }
+      const y = savedPos ? Math.max(wa.y, Math.min(savedPos.y, wa.y + wa.height - height)) : wa.y + wa.height - height
+      return { width, height, x: b.x, y, alwaysOnTopLevel: 'screen-saver' }
     }
 
-    // Fallback: assume bottom taskbar of 48px
     return {
       width: OVERLAY_WIDTH, height: 48,
       x: b.x + b.width - OVERLAY_WIDTH, y: b.y + b.height - 48,
@@ -69,12 +71,14 @@ function getOverlayBounds(mode) {
     }
   }
 
-  // classic: floating card just above taskbar, bottom-right
+  // classic: floating card, default bottom-right, or saved position
+  const defaultX = wa.x + wa.width - 325
+  const defaultY = wa.y + wa.height - 130
   return {
     width: 320,
     height: 130,
-    x: wa.x + wa.width - 325,
-    y: wa.y + wa.height - 130,
+    x: savedPos ? savedPos.x : defaultX,
+    y: savedPos ? savedPos.y : defaultY,
     alwaysOnTopLevel: 'floating'
   }
 }
@@ -83,10 +87,11 @@ function getOverlayBounds(mode) {
  * Repositions and resizes an existing overlay window to match the given mode.
  * @param {BrowserWindow} win
  * @param {'classic'|'taskbar'} mode
+ * @param {{x:number,y:number}|null} [savedPos]
  */
-function repositionOverlay(win, mode) {
+function repositionOverlay(win, mode, savedPos) {
   if (!win || win.isDestroyed()) return
-  const { x, y, width, height, alwaysOnTopLevel } = getOverlayBounds(mode)
+  const { x, y, width, height, alwaysOnTopLevel } = getOverlayBounds(mode, savedPos)
   win.setBounds({ x, y, width, height })
   win.setAlwaysOnTop(true, alwaysOnTopLevel)
 }
@@ -94,10 +99,11 @@ function repositionOverlay(win, mode) {
 /**
  * Creates the always-on-top transparent overlay window.
  * @param {'classic'|'taskbar'} mode
+ * @param {{x:number,y:number}|null} [savedPos]
  * @returns {BrowserWindow}
  */
-function createOverlayWindow(mode = 'classic') {
-  const { x, y, width, height, alwaysOnTopLevel } = getOverlayBounds(mode)
+function createOverlayWindow(mode = 'classic', savedPos) {
+  const { x, y, width, height, alwaysOnTopLevel } = getOverlayBounds(mode, savedPos)
   const preloadPath = getPreloadPath('preload-overlay.js')
 
   const win = new BrowserWindow({
@@ -110,7 +116,7 @@ function createOverlayWindow(mode = 'classic') {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
-    movable: false,
+    movable: true,
     focusable: false,
     hasShadow: false,
     show: false,
@@ -177,4 +183,4 @@ function createMainWindow() {
   return win
 }
 
-module.exports = { createOverlayWindow, createMainWindow, repositionOverlay }
+module.exports = { createOverlayWindow, createMainWindow, repositionOverlay, getOverlayBounds }

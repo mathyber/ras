@@ -25,8 +25,8 @@ function createOverlayWindow() {
   const win = new BrowserWindow({
     width: 320,
     height: 130,
-    x: workArea.x + workArea.width - 340,
-    y: workArea.y + workArea.height - 150,
+    x: workArea.x + workArea.width - 325,
+    y: workArea.y + workArea.height - 130, // flush with taskbar top, no gap
     frame: false,
     transparent: true,
     alwaysOnTop: true,

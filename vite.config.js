@@ -9,8 +9,15 @@ export default defineConfig({
     react(),
     electron([
       {
-        // Main process — all local modules are bundled into a single CJS file
-        entry: 'src/main/main.js',
+        // Main process — each file built separately so require('./storage') etc. resolve at runtime
+        entry: [
+          'src/main/main.js',
+          'src/main/storage.js',
+          'src/main/windowManager.js',
+          'src/main/trayManager.js',
+          'src/main/ipcHandlers.js',
+          'src/main/wordScheduler.js',
+        ],
         onstart(options) {
           options.startup()
         },
@@ -19,11 +26,9 @@ export default defineConfig({
             outDir: 'dist-electron/main',
             rollupOptions: {
               external: ['electron'],
-              input: 'src/main/main.js',
               output: {
                 format: 'cjs',
-                entryFileNames: 'main.js',
-                inlineDynamicImports: true
+                entryFileNames: '[name].js'
               }
             },
             minify: false

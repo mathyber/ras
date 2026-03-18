@@ -11,6 +11,7 @@ const scheduler = require('./wordScheduler')
 let overlayWindow = null
 let mainWindow = null  // lazy — only created when user opens from tray
 let cursorPollingHandle = null
+let overlayMode = 'classic'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,8 @@ function openMainWindow() {
 // mouse-event passthrough based on whether the cursor is over the overlay.
 
 function startCursorPolling() {
+  let topTickCounter = 0
+
   cursorPollingHandle = setInterval(() => {
     if (!overlayWindow || overlayWindow.isDestroyed() || !overlayWindow.isVisible()) return
 
@@ -56,6 +59,18 @@ function startCursorPolling() {
     // When hovered: accept mouse events (so the "Mark Learned" button is clickable)
     // When not hovered: forward mouse events through (click-through behaviour)
     overlayWindow.setIgnoreMouseEvents(!isHovered, { forward: true })
+
+    // In taskbar mode re-assert z-order every second so the overlay doesn't sink
+    // behind the taskbar when the user clicks on it (Windows resets z-order).
+    if (overlayMode === 'taskbar') {
+      topTickCounter++
+      if (topTickCounter >= 10) {
+        topTickCounter = 0
+        overlayWindow.moveTop()
+      }
+    } else {
+      topTickCounter = 0
+    }
   }, 100)
 }
 
@@ -64,10 +79,14 @@ function startCursorPolling() {
 app.whenReady().then(() => {
   // 1. Load persisted data into the in-memory cache
   const data = loadData()
-  const overlayMode = data?.settings?.overlayMode || 'classic'
+  overlayMode = data?.settings?.overlayMode || 'classic'
 
   // 2. Register all IPC handlers before any window is created
-  registerIpcHandlers({ getMainWindow, getOverlayWindow: () => overlayWindow })
+  registerIpcHandlers({
+    getMainWindow,
+    getOverlayWindow: () => overlayWindow,
+    onModeChange: (m) => { overlayMode = m }
+  })
 
   // 3. Create the always-on-top overlay (hidden until a word is ready)
   overlayWindow = createOverlayWindow(overlayMode)

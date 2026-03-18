@@ -15,23 +15,56 @@ function getPreloadPath(filename) {
 
 /**
  * Calculates overlay window bounds and alwaysOnTop level based on mode.
+ * Detects taskbar edge (bottom/top/left/right) from workArea vs bounds delta.
  * @param {'classic'|'taskbar'} mode
  * @returns {{ x, y, width, height, alwaysOnTopLevel }}
  */
 function getOverlayBounds(mode) {
   const display = screen.getPrimaryDisplay()
-  const { workArea, bounds } = display
+  const { workArea: wa, bounds: b } = display
 
   if (mode === 'taskbar') {
-    // Taskbar occupies the strip below workArea
-    const taskbarHeight = bounds.height - (workArea.y + workArea.height)
-    const height = Math.max(taskbarHeight > 0 ? taskbarHeight : 48, 40)
-    const width = 320
+    // Compute how much space is trimmed from each edge (taskbar location).
+    // All coordinates are in global screen space, so use absolute values.
+    const trimBottom = (b.y + b.height) - (wa.y + wa.height)
+    const trimTop    = wa.y - b.y
+    const trimRight  = (b.x + b.width)  - (wa.x + wa.width)
+    const trimLeft   = wa.x - b.x
+
+    const OVERLAY_WIDTH = 320
+
+    if (trimBottom >= trimTop && trimBottom >= trimRight && trimBottom >= trimLeft && trimBottom > 0) {
+      // Taskbar at bottom (most common)
+      const height = Math.max(trimBottom, 40)
+      const width  = Math.min(OVERLAY_WIDTH, wa.width)
+      return { width, height, x: wa.x + Math.floor((wa.width - width) / 2), y: wa.y + wa.height, alwaysOnTopLevel: 'screen-saver' }
+    }
+
+    if (trimTop >= trimBottom && trimTop >= trimRight && trimTop >= trimLeft && trimTop > 0) {
+      // Taskbar at top
+      const height = Math.max(trimTop, 40)
+      const width  = Math.min(OVERLAY_WIDTH, wa.width)
+      return { width, height, x: wa.x + Math.floor((wa.width - width) / 2), y: b.y, alwaysOnTopLevel: 'screen-saver' }
+    }
+
+    if (trimRight >= trimLeft && trimRight > 0) {
+      // Taskbar on right
+      const width  = Math.max(trimRight, 40)
+      const height = Math.min(120, wa.height)
+      return { width, height, x: wa.x + wa.width, y: wa.y + wa.height - height, alwaysOnTopLevel: 'screen-saver' }
+    }
+
+    if (trimLeft > 0) {
+      // Taskbar on left
+      const width  = Math.max(trimLeft, 40)
+      const height = Math.min(120, wa.height)
+      return { width, height, x: b.x, y: wa.y + wa.height - height, alwaysOnTopLevel: 'screen-saver' }
+    }
+
+    // Fallback: assume bottom taskbar of 48px
     return {
-      width,
-      height,
-      x: workArea.x + workArea.width - width,
-      y: workArea.y + workArea.height,
+      width: OVERLAY_WIDTH, height: 48,
+      x: b.x + b.width - OVERLAY_WIDTH, y: b.y + b.height - 48,
       alwaysOnTopLevel: 'screen-saver'
     }
   }
@@ -40,8 +73,8 @@ function getOverlayBounds(mode) {
   return {
     width: 320,
     height: 130,
-    x: workArea.x + workArea.width - 325,
-    y: workArea.y + workArea.height - 130,
+    x: wa.x + wa.width - 325,
+    y: wa.y + wa.height - 130,
     alwaysOnTopLevel: 'floating'
   }
 }
@@ -125,7 +158,7 @@ function createMainWindow() {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: false
     }
   })
 

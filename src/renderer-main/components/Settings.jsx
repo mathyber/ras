@@ -1,6 +1,71 @@
 // Settings.jsx — overlay display mode picker
 import React, { useState, useEffect } from 'react'
 
+// ─── Preview mini-styles ──────────────────────────────────────────────────────
+// Must be declared before MODES which references them in JSX
+
+const p = {
+  classicPreview: {
+    width: '100%',
+    height: 90,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  screen: {
+    width: 140,
+    height: 80,
+    background: '#1a1a2e',
+    borderRadius: 4,
+    position: 'relative',
+    overflow: 'hidden',
+    border: '1px solid rgba(255,255,255,0.08)'
+  },
+  taskbar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 14,
+    background: '#111'
+  },
+  classicCard: {
+    position: 'absolute',
+    bottom: 14,
+    right: 3,
+    width: 48,
+    background: 'rgba(20,20,20,0.95)',
+    borderRadius: 3,
+    padding: '3px 5px',
+    border: '1px solid rgba(255,255,255,0.1)'
+  },
+  cardWord: { fontSize: 7, fontWeight: 700, color: '#fff' },
+  cardTrans: { fontSize: 6, color: '#aaa' },
+  taskbarWithOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 14,
+    background: '#111',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end'
+  },
+  taskbarOverlay: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 3,
+    paddingRight: 4,
+    borderLeft: '1.5px solid rgba(74,158,255,0.7)',
+    paddingLeft: 4,
+    height: '100%'
+  },
+  tbWord: { fontSize: 6, fontWeight: 700, color: '#fff' },
+  tbDot:  { fontSize: 6, color: '#555' },
+  tbTrans:{ fontSize: 6, color: '#aaa' }
+}
+
 const MODES = [
   {
     id: 'classic',
@@ -100,77 +165,6 @@ export default function Settings() {
       {saved && <div style={st.toast}>Applied!</div>}
     </div>
   )
-}
-
-// ─── Preview mini-styles ──────────────────────────────────────────────────────
-
-const p = {
-  classicPreview: {
-    width: '100%',
-    height: 90,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  screen: {
-    width: 140,
-    height: 80,
-    background: '#1a1a2e',
-    borderRadius: 4,
-    position: 'relative',
-    overflow: 'hidden',
-    border: '1px solid rgba(255,255,255,0.08)'
-  },
-  taskbar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 14,
-    background: '#111'
-  },
-  classicCard: {
-    position: 'absolute',
-    bottom: 14,
-    right: 3,
-    width: 48,
-    background: 'rgba(20,20,20,0.95)',
-    borderRadius: 3,
-    padding: '3px 5px',
-    border: '1px solid rgba(255,255,255,0.1)'
-  },
-  cardWord: {
-    fontSize: 7,
-    fontWeight: 700,
-    color: '#fff'
-  },
-  cardTrans: {
-    fontSize: 6,
-    color: '#aaa'
-  },
-  taskbarWithOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 14,
-    background: '#111',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end'
-  },
-  taskbarOverlay: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 3,
-    paddingRight: 4,
-    borderLeft: '1.5px solid rgba(74,158,255,0.7)',
-    paddingLeft: 4,
-    height: '100%'
-  },
-  tbWord: { fontSize: 6, fontWeight: 700, color: '#fff' },
-  tbDot:  { fontSize: 6, color: '#555' },
-  tbTrans:{ fontSize: 6, color: '#aaa' }
 }
 
 // ─── Component styles ─────────────────────────────────────────────────────────

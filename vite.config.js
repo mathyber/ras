@@ -91,10 +91,10 @@ export default defineConfig({
           }
         }
       }
-    ]),
-    renderer()
+    ])
   ],
   build: {
+    minify: false,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/renderer-main/index.html'),

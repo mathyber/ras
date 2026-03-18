@@ -24,7 +24,7 @@ function notifyMainWindow() {
  * @param {object} opts
  * @param {Function} opts.getMainWindow  - returns the current mainWindow (may be null/lazy)
  */
-function registerIpcHandlers({ getMainWindow, getOverlayWindow }) {
+function registerIpcHandlers({ getMainWindow, getOverlayWindow, onModeChange }) {
   // Keep a live reference so notifyMainWindow always uses the latest window
   ipcMain.handle('words:getAll', () => {
     const data = getData()
@@ -213,6 +213,8 @@ function registerIpcHandlers({ getMainWindow, getOverlayWindow }) {
     const settings = getSettings()
     settings.overlayMode = mode
     saveSettings(settings)
+
+    if (typeof onModeChange === 'function') onModeChange(mode)
 
     // Reposition overlay window immediately
     overlayWindowRef = getOverlayWindow()

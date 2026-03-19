@@ -21,10 +21,11 @@ function getNextWord(words, lastShownId) {
 
   if (unlearned.length === 0) return null
 
-  const lastIndex = unlearned.findIndex(w => w.id === lastShownId)
-  const nextIndex = lastIndex === -1 ? 0 : (lastIndex + 1) % unlearned.length
+  // Pick a random word, avoiding repeating the last shown one (if possible)
+  const candidates = unlearned.length > 1 ? unlearned.filter(w => w.id !== lastShownId) : unlearned
+  const randomIndex = Math.floor(Math.random() * candidates.length)
 
-  return unlearned[nextIndex]
+  return candidates[randomIndex]
 }
 
 /**
